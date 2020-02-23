@@ -1,3 +1,4 @@
+// Package scp ...
 package scp
 
 import (
@@ -14,7 +15,8 @@ import (
 	"github.com/tosone/logging"
 )
 
-const Binary = "/usr/bin/scp"
+// Binary ..
+var Binary = "/usr/bin/scp"
 
 type Client struct {
 	Host         string            // scp target host
@@ -23,7 +25,7 @@ type Client struct {
 	conn         ssh.Conn          // ssh connection
 }
 
-// Connects to the remote SSH server, returns error if it couldn't establish a session to the SSH server
+// Connect connect to the remote SSH server, returns error if it couldn't establish a session to the SSH server
 func (c *Client) Connect() (err error) {
 	var client *ssh.Client
 	if client, err = ssh.Dial("tcp", c.Host, c.ClientConfig); err != nil {
@@ -93,7 +95,7 @@ func (c *Client) CopyTimeout(reader io.Reader, remotePath string, permission os.
 	return
 }
 
-// Copies the contents of an io.Reader to a remote location
+// Copy Copies the contents of an io.Reader to a remote location
 func (c *Client) Copy(reader io.Reader, remotePath string, permission os.FileMode, size int64) (err error) {
 	var filename = path.Base(remotePath)
 
@@ -140,6 +142,7 @@ func (c *Client) Copy(reader io.Reader, remotePath string, permission os.FileMod
 	return
 }
 
+// Close ..
 func (c *Client) Close() (err error) {
 	if err = c.conn.Close(); err != nil {
 		return
