@@ -11,46 +11,49 @@ It uses the golang.org/x/crypto/ssh package to establish a secure connection to 
 package main
 
 import (
-	"fmt"
-	scp "github.com/bramvdbogaerde/go-scp"
-	"github.com/bramvdbogaerde/go-scp/auth"
-	"golang.org/x/crypto/ssh"
+	"log"
+	"net"
 	"os"
+
+	"golang.org/x/crypto/ssh"
+
+	"github.com/tosone/go-scp"
 )
 
 func main() {
-	// Use SSH key authentication from the auth package
-	// we ignore the host key in this example, please change this if you use this library
-	clientConfig, _ := auth.PrivateKey("username", "/path/to/rsa/key", ssh.InsecureIgnoreHostKey())
-
-	// For other authentication methods see ssh.ClientConfig and ssh.AuthMethod
-
-	// Create a new SCP client
-	client := scp.NewClient("example.com:22", &clientConfig)
-
-	// Connect to the remote server
-	err := client.Connect()
-	if err != nil {
-		fmt.Println("Couldn't establish a connection to the remote server ", err)
-		return
+	var sshClient = &ssh.ClientConfig{
+		User: "tosone",
+		Auth: []ssh.AuthMethod{
+			ssh.Password("123456"),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+	var client = scp.Client{
+		Host:         net.JoinHostPort("192.168.1.100", "22"),
+		ClientConfig: sshClient,
 	}
 
-	// Open a file
-	f, _ := os.Open("/path/to/local/file")
+	var err error
 
-	// Close client connection after the file has been copied
-	defer client.Close()
+	const filename = "test.txt"
+	var fileInfo os.FileInfo
+	if fileInfo, err = os.Stat(filename); err != nil {
+		log.Fatal(err)
+	}
+	var fileReader *os.File
+	if fileReader, err = os.Open(filename); err != nil {
+		log.Fatal(err)
+	}
 
-	// Close the file after it has been copied
-	defer f.Close()
+	if err = client.Connect(); err != nil {
+		log.Fatal(err)
+	}
 
-	// Finaly, copy the file over
-	// Usage: CopyFile(fileReader, remotePath, permission)
-
-	err = client.CopyFile(f, "/home/server/test.txt", "0655")
-
-	if err != nil {
-		fmt.Println("Error while copying file ", err)
+	if err = client.Copy(fileReader, "/home/test/test.txt", 0644, fileInfo.Size()); err != nil {
+		log.Fatal(err)
+	}
+	if err = client.Close(); err != nil {
+		log.Fatal(err)
 	}
 }
 ```
